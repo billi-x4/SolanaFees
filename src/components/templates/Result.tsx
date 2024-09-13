@@ -1,22 +1,17 @@
-import { Transition } from "@headlessui/react";
+import React, { useMemo } from "react";
 import BigNumber from "bignumber.js";
-import clx from "classnames";
-import { usePlausible } from "next-plausible";
-import { ChangeEvent, SyntheticEvent, useMemo, useState, useEffect } from "react";
 import { IoGitCompare, IoInformationCircle } from "react-icons/io5";
 import { MdPlaylistAdd, MdSkipPrevious } from "react-icons/md";
 import { GAS_DENOMINATOR, TX_CAP } from "@/constants";
-import { Comparer } from "@/components/molecules";
 import {
   type WalletsSummary,
   type PricesAndFees,
   type WalletResult,
 } from "@/types";
-import { Button, DateDisplay, NoWrap, NumberDisplay, U } from "../atoms";
+import { Button, DateDisplay, NoWrap, NumberDisplay } from "../atoms";
 
 type ResultProps = {
   addWallet: () => void;
-  className?: string;
   pricesAndFees: PricesAndFees;
   reset: () => void;
   summary: WalletResult;
@@ -25,15 +20,11 @@ type ResultProps = {
 
 const Result: React.FC<ResultProps> = ({
   addWallet,
-  className,
   pricesAndFees,
   reset,
   summary,
   wallets,
 }) => {
-  const plausible = usePlausible();
-  const [currentSolPrice, setCurrentSolPrice] = useState<number | null>(null);
-
   const data = useMemo(() => {
     let data: Partial<WalletsSummary> = {};
     if (summary && summary.aggregation) {
@@ -63,118 +54,116 @@ const Result: React.FC<ResultProps> = ({
         .decimalPlaces(6)
         .toNumber();
     }
-
     return data;
   }, [summary, pricesAndFees]);
 
-  useEffect(() => {
-    const fetchSolanaPrice = async () => {
-      try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-        const priceData = await response.json();
-        setCurrentSolPrice(priceData.solana.usd);
-      } catch (error) {
-        console.error('Failed to fetch Solana price:', error);
-      }
-    };
-
-    fetchSolanaPrice();
-    // Fetch price every 5 minutes
-    const interval = setInterval(fetchSolanaPrice, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const currentUsdFees = useMemo(() => {
-    if (currentSolPrice && data.solFees) {
-      return new BigNumber(data.solFees).multipliedBy(currentSolPrice).decimalPlaces(2).toNumber();
-    }
-    return null;
-  }, [currentSolPrice, data.solFees]);
-
-  const handleResetClick = () => {
-    plausible("Reset");
-    reset();
-  };
-
   return (
-    <div className={clx(className, "flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4")}>
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8 space-y-6">
-        {(data.txCount as number) >= TX_CAP ? (
-          <p className="flex justify-center items-center mb-4 text-blue-500 text-lg font-semibold">
-            <IoInformationCircle className="inline mr-2" size={24} />
-            <span>
-              We're currently capping at {TX_CAP} transactions. Sorry for the inconvenience!
-            </span>
-          </p>
-        ) : null}
-        
-        <h2 className="text-2xl md:text-3xl text-center font-bold text-gray-800 mb-4">
-          Your Solana Transaction Summary
-        </h2>
+    <div className="space-y-6 max-w-2xl mx-auto">
+      <h2 className="text-3xl font-bold text-center text-purple-200 mb-6">
+        Your Solana Transaction Summary
+      </h2>
 
-        <p className="text-xl md:text-2xl text-center leading-relaxed">
+      {(data.txCount as number) >= TX_CAP && (
+        <div className="bg-blue-500 bg-opacity-20 border border-blue-400 rounded-lg p-4 flex items-center">
+          <IoInformationCircle className="text-blue-300 mr-3 flex-shrink-0" size={24} />
+          <p className="text-blue-100 text-sm">
+            We're currently capping at {TX_CAP.toLocaleString()} transactions. We're working on increasing this limit!
+          </p>
+        </div>
+      )}
+
+      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+        <h3 className="text-2xl font-bold text-purple-200 mb-4">Overview</h3>
+        <p className="text-lg text-purple-100 mb-4">
           {wallets.length > 1 ? (
             <>
               Across your{" "}
-              <span className="font-bold text-solana-purple">{wallets.length} wallets</span>,{" "}
+              <span className="font-bold text-white">{wallets.length} wallets</span>,{" "}
             </>
           ) : (
             <>Your wallet has </>
           )}
           you've spent{" "}
-          <NoWrap className="font-bold text-solana-purple">
+          <NoWrap className="font-bold text-white">
             ◎ <NumberDisplay val={data.solFees as number} />
           </NoWrap>{" "}
           in fees for{" "}
-          <span className="font-bold text-solana-purple">{data.txCount} transactions</span>.
+          <span className="font-bold text-white">{data.txCount?.toLocaleString()} transactions</span>.
         </p>
-
-        {currentUsdFees !== null ? (
-          <p className="text-xl md:text-2xl text-center leading-relaxed mt-4">
-            <U className="font-semibold">Right now</U>, that's equivalent to{" "}
-            <NoWrap className="font-bold text-solana-purple">
-              $ <NumberDisplay val={currentUsdFees} />
-            </NoWrap>
-            .
-          </p>
-        ) : null}
-
-        <div className="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-          <p className="mb-2 text-lg">
-            You paid for{" "}
-            <span className="font-semibold">
-              <NumberDisplay
-                val={(data.txCount as number) - (data.txCountUnpaid as number)}
-              />
-            </span>{" "}
-            of the {data.txCount} transactions. On average, you paid{" "}
-            <NoWrap className="font-semibold">
-              ◎ <NumberDisplay val={data.solAvgFee as number} />
+        {data.usdFees && (
+          <p className="text-lg text-purple-100">
+            That's equivalent to{" "}
+            <NoWrap className="font-bold text-white">
+              $ <NumberDisplay val={data.usdFees} />
             </NoWrap>{" "}
-            {data.usdAvgFee ? (
-              <NoWrap className="text-gray-600">
-                ($ <NumberDisplay val={data.usdAvgFee} />)
-              </NoWrap>
-            ) : null}{" "}
-            per transaction.
+            at current prices.
           </p>
-          <p className="text-lg">
-            Your first transaction was on{" "}
-            <span className="font-semibold">
+        )}
+      </div>
+
+      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+        <h3 className="text-2xl font-bold text-purple-200 mb-4">Transaction Details</h3>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-purple-300">Total Transactions:</span>
+            <span className="text-white font-semibold">{data.txCount?.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-purple-300">Paid Transactions:</span>
+            <span className="text-white font-semibold">
+              {((data.txCount as number) - (data.txCountUnpaid as number)).toLocaleString()}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-purple-300">Unpaid Transactions:</span>
+            <span className="text-white font-semibold">{data.txCountUnpaid?.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-purple-300">Average Fee per Transaction:</span>
+            <div className="text-right">
+              <NoWrap className="text-white font-semibold">
+                ◎ <NumberDisplay val={data.solAvgFee as number} />
+              </NoWrap>
+              {data.usdAvgFee && (
+                <NoWrap className="text-purple-400 text-sm">
+                  ($ <NumberDisplay val={data.usdAvgFee} />)
+                </NoWrap>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-purple-300">First Transaction Date:</span>
+            <span className="text-white font-semibold">
               <DateDisplay val={data.firstTransaction as Date} />
             </span>
+          </div>
+        </div>
+      </div>
+
+      {wallets.length > 1 && (
+        <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+          <h3 className="text-2xl font-bold text-purple-200 mb-4">Wallet Information</h3>
+          <p className="text-purple-100">
+            This summary includes data from <span className="font-semibold text-white">{wallets.length}</span> connected wallets.
           </p>
         </div>
+      )}
 
-        {/* <div className="flex justify-center space-x-4 mt-6">
-          <Button onClick={addWallet} className="flex items-center">
-            <MdPlaylistAdd className="mr-2" /> Add Another Wallet
-          </Button>
-          <Button onClick={handleResetClick} className="flex items-center">
-            <MdSkipPrevious className="mr-2" /> Start Over
-          </Button>
-        </div> */}
+      <div className="flex justify-center space-x-4 mt-8">
+        <Button
+          onClick={addWallet}
+          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center"
+        >
+          <MdPlaylistAdd className="mr-2" size={20} />
+          Add Another Wallet
+        </Button>
+        <Button
+          onClick={reset}
+          className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 flex items-center"
+        >
+          <MdSkipPrevious className="mr-2" size={20} />
+          Start Over
+        </Button>
       </div>
     </div>
   );
