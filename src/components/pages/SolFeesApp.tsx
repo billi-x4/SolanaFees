@@ -44,7 +44,7 @@ const SolFeesApp = () => {
   const umiRef = useRef<any>(null);
 
   // Hooks
-  const { pricesAndFees } = usePricesAndFees();
+  const { pricesAndFees, isLoading: priceLoading } = usePricesAndFees();
   const {
     error,
     progress,
@@ -280,11 +280,11 @@ const SolFeesApp = () => {
                 <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
                   <h2 className="text-3xl font-bold mb-6 text-center text-purple-200">Your Solana Fee Summary</h2>
                   <Result
-                    pricesAndFees={pricesAndFees as PricesAndFees}
+                    pricesAndFees={pricesAndFees}
                     summary={summary as WalletResult}
                     addWallet={() => {}}
                     reset={resetResult}
-                    wallets={[]}
+                    wallets={[address]}
                   />
                   
                   {isLoading ? (
