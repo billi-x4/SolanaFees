@@ -44,7 +44,7 @@ const SolFeesApp = () => {
   const umiRef = useRef<any>(null);
 
   // Hooks
-  const { pricesAndFees, isLoading: priceLoading } = usePricesAndFees();
+  const { pricesAndFees } = usePricesAndFees();
   const {
     error,
     progress,
@@ -227,126 +227,151 @@ const SolFeesApp = () => {
   return (
     <main
       ref={measureRef}
-      className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-800 text-white"
+      className="min-h-screen flex flex-col items-center justify-center px-2"
     >
       {!isReady ? (
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-300"></div>
-        </div>
+        <p>Loading...</p>
       ) : (
-        <div className="container mx-auto px-4 py-8">
+        <>
           {!address ? (
-            <div className="max-w-md mx-auto bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
-              <h1 className="text-4xl font-bold mb-6 text-center text-purple-200">
-                Solana Fees Checker
-              </h1>
-              <p className="text-lg mb-8 text-center text-purple-100">
-                Welcome, {username || "User"}! Ready to explore your Solana transaction fees?
-              </p>
-              <Button
-                onClick={handleConnectWallet}
-                className="w-full py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
-              >
-                Connect Wallet
-              </Button>
-              {errorMessage && (
-                <div className="mt-4 p-3 bg-red-500 bg-opacity-25 border border-red-400 rounded-lg">
-                  <p className="text-sm text-center text-red-100">{errorMessage}</p>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-400 to-indigo-600 text-white p-4">
+              <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl max-w-md w-full">
+                <h1 className="text-3xl font-bold mb-6 text-center">
+                  Welcome to Solana Fees Checker
+                </h1>
+                <p className="text-lg mb-4 text-center">
+                  Hello, {username ? username : "User"}! Ready to explore your
+                  Solana transaction fees?
+                </p>
+                <div className="space-y-4">
+                  <Button
+                    onClick={handleConnectWallet}
+                    className="w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    Connect Wallet
+                  </Button>
+                  <p className="text-sm text-center opacity-75">
+                    Connect your Solana wallet to get started and check your
+                    transaction fees.
+                  </p>
                 </div>
-              )}
+                {errorMessage && (
+                  <div className="mt-4 p-3 bg-red-500 bg-opacity-25 border border-red-600 rounded-lg">
+                    <p className="text-sm text-center text-red-100">
+                      {errorMessage}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="mt-8 text-center">
+                <h2 className="text-xl font-semibold mb-3">
+                  Why use Solana Fees Checker?
+                </h2>
+                <ul className="space-y-2">
+                  <li>✅ Track your Solana transaction fees</li>
+                  <li>✅ Understand your spending patterns</li>
+                  <li>✅ Potentially mint exclusive NFTs</li>
+                  <li>✅ Optimize your future transactions</li>
+                </ul>
+              </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto">
+            <>
               <FadeInOutTransition
-                show={(state === "loading" || state === "resolving") && !isElementLeaving}
+                show={
+                  (state === "loading" || state === "resolving") &&
+                  !isElementLeaving
+                }
                 beforeLeave={setElementLeaving}
                 afterLeave={setElementNotLeaving}
               >
-                <div className="text-center">
-                  <Progress state={state} progress={progress} />
-                  <p className="mt-4 text-lg text-purple-200">Analyzing your transaction fees...</p>
-                </div>
+                <Progress state={state} progress={progress} />
+                <Spotlight opacity={0.1} size={spotlight1Size} />
+                <Spotlight opacity={0.2} size={spotlight2Size} />
               </FadeInOutTransition>
-              
               <Transition
                 show={state === "done" && !isElementLeaving}
-                enter="transition-opacity duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="transition-opacity duration-300"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
+                afterEnter={() => window.scrollTo(0, 0)}
+                beforeLeave={setElementLeaving}
+                afterLeave={setElementNotLeaving}
+                enter="transition-transform duration-200 ease-in"
+                enterFrom="translate-y-full"
+                enterTo="translate-y-0"
+                leave="transition-transform duration-200 ease-out"
+                leaveFrom="translate-y-0"
+                leaveTo="translate-y-full"
+                className={clx(
+                  "grow",
+                  "flex",
+                  "flex-col",
+                  "w-full",
+                  "sm:max-w-xl md:max-w-2xl lg:max-w-4xl",
+                  "mx-auto",
+                  "mt-2 sm:mt-4 md:mt-8",
+                  "pt-2 sm:pt-4 md:pt-8",
+                  "px-2 sm:px-4 md:px-8",
+                  "rounded-t-lg",
+                  "bg-white",
+                  "shadow-2xl"
+                )}
               >
-                <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
-                  <h2 className="text-3xl font-bold mb-6 text-center text-purple-200">Your Solana Fee Summary</h2>
+                <div className="grow">
                   <Result
-                    pricesAndFees={pricesAndFees}
+                    pricesAndFees={pricesAndFees as PricesAndFees}
                     summary={summary as WalletResult}
-                    addWallet={() => {}}
-                    reset={resetResult}
-                    wallets={[address]}
+                    addWallet={() => {}} // Add a no-op function or implement as needed
+                    reset={resetResult} // Use the resetResult function from useTransactions
+                    wallets={[]} // Add an empty array or populate with actual wallets if available
                   />
-                  
                   {isLoading ? (
-                    <div className="flex justify-center mt-6">
-                      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-300"></div>
-                    </div>
+                    <p>Loading...</p>
                   ) : isEligible ? (
-                    <div className="mt-8 text-center">
-                      <p className="text-xl font-semibold text-green-300 mb-4">
+                    <div className="flex flex-col items-center">
+                      <p className="text-green-500 mt-4">
                         🎉 Congratulations! You're eligible to mint the NFT.
                       </p>
                       <Button
                         onClick={mintNFT}
                         disabled={transactionStatus === "Minting NFT..."}
-                        className="py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {transactionStatus === "Minting NFT..." ? "Minting..." : "Mint NFT"}
+                        Mint NFT
                       </Button>
                     </div>
                   ) : (
-                    <div className="mt-8 text-center">
-                      <p className="text-xl font-semibold text-yellow-300 mb-4">
-                        Almost there! You need to spend at least $0.001 in transaction fees to be eligible.
-                      </p>
-                      <p className="text-md text-purple-200">
-                        Keep using your Solana wallet and check back soon!
-                      </p>
-                    </div>
+                    <p className="text-red-500 mt-4">
+                      You are not eligible to mint the NFT. You need to spend at
+                      least $0.001 in transaction fees.
+                    </p>
                   )}
-                  
                   {transactionStatus && (
-                    <div className={`mt-4 p-3 rounded-lg ${
-                      transactionStatus.includes("successfully") ? "bg-green-500 bg-opacity-25" : "bg-red-500 bg-opacity-25"
-                    }`}>
-                      <p className="text-center font-semibold">
-                        {transactionStatus}
-                      </p>
-                    </div>
+                    <p
+                      className={`mt-4 ${
+                        transactionStatus.includes("successfully")
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {transactionStatus}
+                    </p>
                   )}
-                  
                   {errorMessage && (
-                    <div className="mt-4 p-3 bg-red-500 bg-opacity-25 border border-red-400 rounded-lg">
-                      <p className="text-sm text-center text-red-100">{errorMessage}</p>
-                    </div>
+                    <p className="mt-2 text-red-500">{errorMessage}</p>
                   )}
                 </div>
               </Transition>
-              
-              {state === "done" && (
+              {state === "done" ? (
                 <Confetti
-                  gravity={0.1}
+                  gravity={0.5}
+                  height={screenHeight}
                   numberOfPieces={200}
                   recycle={false}
-                  run={true}
+                  run={state === "done"}
                   width={screenWidth}
-                  height={screenHeight}
-                  colors={['#8B5CF6', '#6366F1', '#EC4899', '#10B981']}
                 />
-              )}
-            </div>
+              ) : null}
+            </>
           )}
-        </div>
+        </>
       )}
     </main>
   );
