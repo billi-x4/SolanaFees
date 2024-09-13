@@ -2,11 +2,12 @@
 
 import { Transition } from "@headlessui/react";
 import clx from "classnames";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Confetti from "react-confetti";
 import { useMeasure } from "react-use";
 import Decimal from 'decimal.js';
 import BigNumber from "bignumber.js";
+import { clusterApiUrl } from '@solana/web3.js';
 
 import { FadeInOutTransition, Spotlight } from "@/components/atoms";
 import { ErrorDisplay, Progress } from "@/components/molecules";
@@ -146,14 +147,7 @@ const SolFeesApp = () => {
         console.log("Connected wallet public key:", publicKey.toString());
         setAddress(publicKey.toString());
         setErrorMessage(null);
-
-        // Initialize Umi instance
-        console.log("Initializing Umi with NoopSigner...");
-        const umi = createUmi("https://api.mainnet-beta.solana.com")
-          .use(mplCore())
-          .use(signerIdentity(umiUseNoopSigner(publicKey.toString())));
-        umiRef.current = umi;
-        console.log("Umi initialized:", umi);
+        initializeUmi();
       } else {
         console.error("Failed to connect wallet.");
         setErrorMessage("Failed to connect wallet. Please try again.");
@@ -164,7 +158,7 @@ const SolFeesApp = () => {
     }
   };
 
-  // Updated mintNFT function
+  // Updated mintNFT function with retry logic
   const mintNFT = async () => {
     if (!address || !isEligible) {
       console.error("Cannot mint NFT: Wallet not connected or not eligible");
@@ -178,64 +172,90 @@ const SolFeesApp = () => {
     setTransactionStatus("Minting NFT...");
     setErrorMessage(null);
 
-    try {
-      console.log("Generating signer for asset...");
-      const assetAddress = generateSigner(umiRef.current);
-      console.log("Asset address:", assetAddress);
-      
-      console.log("Building transaction...");
-      let transactionBuilder = await create(umiRef.current, {
-        asset: assetAddress,
-        name: "Solana Fees Checker NFT",
-        uri: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/metadata.json",
-      });
-      console.log("Transaction builder created:", transactionBuilder);
+    const maxRetries = 3;
+    let retries = 0;
 
-      transactionBuilder = transactionBuilder.prepend(
-        setComputeUnitPrice(umiRef.current, {
-          microLamports: 10_000,
-        })
-      );
-      console.log("Compute unit price set on transaction.");
+    while (retries < maxRetries) {
+      try {
+        console.log(`Attempt ${retries + 1} to mint NFT`);
+        
+        console.log("Generating signer for asset...");
+        const assetAddress = generateSigner(umiRef.current);
+        console.log("Asset address:", assetAddress);
+        
+        console.log("Building transaction...");
+        let transactionBuilder = await create(umiRef.current, {
+          asset: assetAddress,
+          name: "Solana Fees Checker NFT",
+          uri: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/metadata.json",
+        });
+        console.log("Transaction builder created:", transactionBuilder);
 
-      console.log("Building and signing the transaction...");
-      const tx = await transactionBuilder.buildAndSign(umiRef.current);
-      console.log("Transaction built and signed:", tx);
+        transactionBuilder = transactionBuilder.prepend(
+          setComputeUnitPrice(umiRef.current, {
+            microLamports: 10_000,
+          })
+        );
+        console.log("Compute unit price set on transaction.");
 
-      console.log("Serializing transaction...");
-      const serializedTx = umiRef.current?.transactions.serialize(tx);
-      console.log("Serialized transaction:", serializedTx);
+        console.log("Building and signing the transaction...");
+        const tx = await transactionBuilder.buildAndSign(umiRef.current);
+        console.log("Transaction built and signed:", tx);
 
-      console.log("Encoding transaction in base58...");
-      const base58EncodedTx = base58.encode(serializedTx);
-      console.log("Base58 encoded transaction:", base58EncodedTx);
+        console.log("Serializing transaction...");
+        const serializedTx = umiRef.current?.transactions.serialize(tx);
+        console.log("Serialized transaction:", serializedTx);
 
-      console.log("Sending transaction to DSCVR...");
-      const results = await canvasClientRef.current?.signAndSendTransaction({
-        unsignedTx: base58EncodedTx,
-        awaitCommitment: "confirmed",
-        chainId: "solana:101",
-      });
-      console.log("Transaction sent. Results:", results);
+        console.log("Encoding transaction in base58...");
+        const base58EncodedTx = base58.encode(serializedTx);
+        console.log("Base58 encoded transaction:", base58EncodedTx);
 
-      if (results?.untrusted.success) {
-        console.log("NFT minted successfully:", results);
-        setTransactionStatus("NFT minted successfully!");
-        setTimeout(() => {
-          setTransactionStatus(null);
-        }, 3000);
-      } else {
-        throw new Error("Transaction failed.");
+        console.log("Sending transaction to DSCVR...");
+        const results = await canvasClientRef.current?.signAndSendTransaction({
+          unsignedTx: base58EncodedTx,
+          awaitCommitment: "confirmed",
+          chainId: "solana:101",
+        });
+        console.log("Transaction sent. Results:", results);
+
+        if (results?.untrusted.success) {
+          console.log("NFT minted successfully:", results);
+          setTransactionStatus("NFT minted successfully!");
+          setTimeout(() => {
+            setTransactionStatus(null);
+          }, 3000);
+          return; // Exit the function if successful
+        } else {
+          throw new Error("Transaction failed.");
+        }
+      } catch (error: any) {
+        console.error(`Minting error (Attempt ${retries + 1}):`, error);
+        console.log("Detailed error stack trace:", error.stack);
+        retries++;
+        
+        if (retries >= maxRetries) {
+          setTransactionStatus("Minting failed.");
+          setErrorMessage(
+            "An error occurred during the minting process. Please try again later."
+          );
+        } else {
+          console.log(`Retrying in 5 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
       }
-    } catch (error: any) {
-      console.error("Minting error:", error);
-      console.log("Detailed error stack trace:", error.stack);
-      setTransactionStatus("Minting failed.");
-      setErrorMessage(
-        "An error occurred during the minting process. Please try again."
-      );
     }
   };
+
+  // Updated function to initialize Umi
+  const initializeUmi = useCallback(() => {
+    console.log("Initializing Umi with NoopSigner...");
+    const connection = clusterApiUrl('mainnet-beta');
+    const umi = createUmi(connection)
+      .use(mplCore())
+      .use(signerIdentity(umiUseNoopSigner(address as string)));
+    umiRef.current = umi;
+    console.log("Umi initialized:", umi);
+  }, [address]);
 
   // UI and Rendering Logic
   const [measureRef, { width: screenWidth, height: screenHeight }] =
