@@ -1,18 +1,17 @@
 import React, { useMemo } from "react";
 import BigNumber from "bignumber.js";
-import { IoGitCompare, IoInformationCircle } from "react-icons/io5";
+import { IoInformationCircle } from "react-icons/io5";
 import { MdPlaylistAdd, MdSkipPrevious } from "react-icons/md";
 import { GAS_DENOMINATOR, TX_CAP } from "@/constants";
 import {
   type WalletsSummary,
-  type PricesAndFees,
   type WalletResult,
 } from "@/types";
 import { Button, DateDisplay, NoWrap, NumberDisplay } from "../atoms";
 
 type ResultProps = {
   addWallet: () => void;
-  pricesAndFees: PricesAndFees;
+  pricesAndFees: { solanaPrice: number } | null;
   reset: () => void;
   summary: WalletResult;
   wallets: string[];
@@ -28,12 +27,14 @@ const Result: React.FC<ResultProps> = ({
   const data = useMemo(() => {
     let data: Partial<WalletsSummary> = {};
     if (summary && summary.aggregation) {
+      const solFees = new BigNumber(summary.aggregation.feesTotal)
+        .multipliedBy(GAS_DENOMINATOR)
+        .decimalPlaces(5)
+        .toNumber();
+
       data = {
         firstTransaction: new Date(summary.aggregation.firstTransactionTS),
-        solFees: new BigNumber(summary.aggregation.feesTotal)
-          .multipliedBy(GAS_DENOMINATOR)
-          .decimalPlaces(5)
-          .toNumber(),
+        solFees,
         txCount: summary.aggregation.transactionsCount,
         txCountUnpaid: summary.aggregation.unpaidTransactionsCount,
         solAvgFee: new BigNumber(summary.aggregation.feesAvg)
@@ -41,18 +42,19 @@ const Result: React.FC<ResultProps> = ({
           .decimalPlaces(6)
           .toNumber(),
       };
-    }
-    if (pricesAndFees && summary && summary.aggregation) {
-      data.usdFees = new BigNumber(summary.aggregation.feesTotal)
-        .multipliedBy(GAS_DENOMINATOR)
-        .multipliedBy(pricesAndFees.prices.solana)
-        .decimalPlaces(2)
-        .toNumber();
-      data.usdAvgFee = new BigNumber(summary.aggregation.feesAvg)
-        .multipliedBy(GAS_DENOMINATOR)
-        .multipliedBy(pricesAndFees.prices.solana)
-        .decimalPlaces(6)
-        .toNumber();
+
+      if (pricesAndFees && pricesAndFees.solanaPrice) {
+        data.usdFees = new BigNumber(solFees)
+          .multipliedBy(pricesAndFees.solanaPrice)
+          .decimalPlaces(2)
+          .toNumber();
+        data.usdAvgFee = data.solAvgFee !== undefined
+          ? new BigNumber(data.solAvgFee)
+              .multipliedBy(pricesAndFees.solanaPrice)
+              .decimalPlaces(6)
+              .toNumber()
+          : undefined;
+      }
     }
     return data;
   }, [summary, pricesAndFees]);
@@ -90,9 +92,9 @@ const Result: React.FC<ResultProps> = ({
           in fees for{" "}
           <span className="font-bold text-white">{data.txCount?.toLocaleString()} transactions</span>.
         </p>
-        {data.usdFees && (
+        {data.usdFees !== undefined && (
           <p className="text-lg text-purple-100">
-            That's equivalent to{" "}
+            Right now, that's equivalent to{" "}
             <NoWrap className="font-bold text-white">
               $ <NumberDisplay val={data.usdFees} />
             </NoWrap>{" "}
