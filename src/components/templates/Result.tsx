@@ -4,11 +4,7 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import BigNumber from "bignumber.js";
 import { IoInformationCircle } from "react-icons/io5";
 import { GAS_DENOMINATOR, TX_CAP } from "@/constants";
-import {
-  type WalletsSummary,
-  type WalletResult,
-  PricesAndFees,
-} from "@/types";
+import { type WalletsSummary, type WalletResult, PricesAndFees } from "@/types";
 import { DateDisplay, NoWrap, NumberDisplay } from "../atoms";
 
 type ResultProps = {
@@ -40,7 +36,7 @@ const Result: React.FC<ResultProps> = ({
         "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
       );
       if (!response.ok) {
-        throw new Error('Failed to fetch Solana price');
+        throw new Error("Failed to fetch Solana price");
       }
       const priceData = await response.json();
       return priceData.solana.usd;
@@ -53,7 +49,7 @@ const Result: React.FC<ResultProps> = ({
   useEffect(() => {
     const updateSolanaData = async () => {
       const price = await fetchSolanaPrice();
-      setSolanaData(prevData => ({
+      setSolanaData((prevData) => ({
         ...prevData,
         currentPrice: price,
       }));
@@ -104,12 +100,17 @@ const Result: React.FC<ResultProps> = ({
 
   useEffect(() => {
     if (currentUsdFees !== null) {
-      setSolanaData(prevData => ({
+      setSolanaData((prevData) => ({
         ...prevData,
         canMintNFT: currentUsdFees >= 0.001,
       }));
     }
   }, [currentUsdFees]);
+
+  const handleMintNFT = useCallback(() => {
+    // TODO: Implement NFT minting logic
+    console.log("Minting NFT...");
+  }, []);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -227,6 +228,29 @@ const Result: React.FC<ResultProps> = ({
         </div>
       )}
 
+      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+        <h3 className="text-2xl font-bold text-purple-200 mb-4">NFT Minting</h3>
+        {solanaData.canMintNFT ? (
+          <div>
+            <p className="text-purple-100 mb-4">
+              Congratulations! You've spent at least $0.001 in transaction fees.
+              You can now mint your NFT.
+            </p>
+            <button
+              onClick={handleMintNFT}
+              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded"
+            >
+              Mint NFT
+            </button>
+          </div>
+        ) : (
+          <p className="text-purple-100">
+            You need to spend at least $0.001 in transaction fees to be eligible
+            for minting an NFT. Current spend: $
+            {currentUsdFees !== null ? currentUsdFees.toFixed(3) : "0.000"}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
