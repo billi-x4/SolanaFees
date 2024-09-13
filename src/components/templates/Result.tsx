@@ -5,6 +5,7 @@ import { GAS_DENOMINATOR, TX_CAP } from "@/constants";
 import {
   type WalletsSummary,
   type WalletResult,
+  PricesAndFees,
 } from "@/types";
 import { DateDisplay, NoWrap, NumberDisplay } from "../atoms";
 
@@ -13,9 +14,11 @@ type ResultProps = {
   reset: () => void;
   summary: WalletResult;
   wallets: string[];
+  pricesAndFees: PricesAndFees;
 };
 
 const Result: React.FC<ResultProps> = ({
+  pricesAndFees,
   addWallet,
   reset,
   summary,
