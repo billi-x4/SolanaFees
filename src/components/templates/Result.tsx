@@ -111,11 +111,6 @@ const Result: React.FC<ResultProps> = ({
     }
   }, [currentUsdFees]);
 
-  const handleMintNFT = useCallback(() => {
-    // TODO: Implement NFT minting logic
-    console.log("Minting NFT...");
-  }, []);
-
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <h2 className="text-3xl font-bold text-center text-purple-200 mb-6">
@@ -231,29 +226,6 @@ const Result: React.FC<ResultProps> = ({
           </p>
         </div>
       )}
-
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
-        <h3 className="text-2xl font-bold text-purple-200 mb-4">NFT Minting</h3>
-        {solanaData.canMintNFT ? (
-          <div>
-            <p className="text-purple-100 mb-4">
-              Congratulations! You've spent at least $0.001 in transaction fees.
-              You can now mint your NFT.
-            </p>
-            <button
-              onClick={handleMintNFT}
-              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded"
-            >
-              Mint NFT
-            </button>
-          </div>
-        ) : (
-          <p className="text-purple-100">
-            You need to spend at least $0.001 in transaction fees to be eligible for minting an NFT.
-            Current spend: ${currentUsdFees !== null ? currentUsdFees.toFixed(3) : "0.000"}
-          </p>
-        )}
-      </div>
 
     </div>
   );
