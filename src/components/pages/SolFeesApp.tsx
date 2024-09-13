@@ -41,6 +41,7 @@ const SolFeesApp = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [solanaPrice, setSolanaPrice] = useState<number | null>(null);
   const [totalFeesUSD, setTotalFeesUSD] = useState<number | null>(null);
+  const [isEligibilityChecked, setIsEligibilityChecked] = useState(false);
 
   // Refs
   const canvasClientRef = useRef<CanvasClient | null>(null);
@@ -104,6 +105,7 @@ const SolFeesApp = () => {
     };
 
     const calculateEligibility = async () => {
+      setIsLoading(true);
       const price = await fetchSolanaPrice();
       setSolanaPrice(price);
 
@@ -116,12 +118,13 @@ const SolFeesApp = () => {
         setIsEligible(false);
         setTotalFeesUSD(null);
       }
+      setIsEligibilityChecked(true);
+      setIsLoading(false);
     };
 
-    calculateEligibility();
-    const interval = setInterval(calculateEligibility, 5 * 60 * 1000); // Recalculate every 5 minutes
-
-    return () => clearInterval(interval);
+    if (summary) {
+      calculateEligibility();
+    }
   }, [summary]);
 
   // Function to handle wallet connection
@@ -312,7 +315,7 @@ const SolFeesApp = () => {
                     isEligible={isEligible}
                   />
                   
-                  {isLoading ? (
+                  {!isEligibilityChecked ? (
                     <div className="flex justify-center mt-6">
                       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-300"></div>
                     </div>
