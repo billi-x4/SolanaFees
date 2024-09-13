@@ -1,17 +1,18 @@
 import React, { useMemo } from "react";
 import BigNumber from "bignumber.js";
-import { IoInformationCircle } from "react-icons/io5";
+import { IoGitCompare, IoInformationCircle } from "react-icons/io5";
 import { MdPlaylistAdd, MdSkipPrevious } from "react-icons/md";
 import { GAS_DENOMINATOR, TX_CAP } from "@/constants";
 import {
   type WalletsSummary,
+  type PricesAndFees,
   type WalletResult,
 } from "@/types";
 import { Button, DateDisplay, NoWrap, NumberDisplay } from "../atoms";
 
 type ResultProps = {
   addWallet: () => void;
-  pricesAndFees: { solanaPrice: number } | null;
+  pricesAndFees: PricesAndFees;
   reset: () => void;
   summary: WalletResult;
   wallets: string[];
@@ -27,14 +28,12 @@ const Result: React.FC<ResultProps> = ({
   const data = useMemo(() => {
     let data: Partial<WalletsSummary> = {};
     if (summary && summary.aggregation) {
-      const solFees = new BigNumber(summary.aggregation.feesTotal)
-        .multipliedBy(GAS_DENOMINATOR)
-        .decimalPlaces(5)
-        .toNumber();
-
       data = {
         firstTransaction: new Date(summary.aggregation.firstTransactionTS),
-        solFees,
+        solFees: new BigNumber(summary.aggregation.feesTotal)
+          .multipliedBy(GAS_DENOMINATOR)
+          .decimalPlaces(5)
+          .toNumber(),
         txCount: summary.aggregation.transactionsCount,
         txCountUnpaid: summary.aggregation.unpaidTransactionsCount,
         solAvgFee: new BigNumber(summary.aggregation.feesAvg)
@@ -42,19 +41,18 @@ const Result: React.FC<ResultProps> = ({
           .decimalPlaces(6)
           .toNumber(),
       };
-
-      if (pricesAndFees && pricesAndFees.solanaPrice) {
-        data.usdFees = new BigNumber(solFees)
-          .multipliedBy(pricesAndFees.solanaPrice)
-          .decimalPlaces(2)
-          .toNumber();
-        data.usdAvgFee = data.solAvgFee !== undefined
-          ? new BigNumber(data.solAvgFee)
-              .multipliedBy(pricesAndFees.solanaPrice)
-              .decimalPlaces(6)
-              .toNumber()
-          : undefined;
-      }
+    }
+    if (pricesAndFees && summary && summary.aggregation) {
+      data.usdFees = new BigNumber(summary.aggregation.feesTotal)
+        .multipliedBy(GAS_DENOMINATOR)
+        .multipliedBy(pricesAndFees.prices.solana)
+        .decimalPlaces(2)
+        .toNumber();
+      data.usdAvgFee = new BigNumber(summary.aggregation.feesAvg)
+        .multipliedBy(GAS_DENOMINATOR)
+        .multipliedBy(pricesAndFees.prices.solana)
+        .decimalPlaces(6)
+        .toNumber();
     }
     return data;
   }, [summary, pricesAndFees]);
@@ -92,9 +90,9 @@ const Result: React.FC<ResultProps> = ({
           in fees for{" "}
           <span className="font-bold text-white">{data.txCount?.toLocaleString()} transactions</span>.
         </p>
-        {data.usdFees !== undefined && (
+        {data.usdFees && (
           <p className="text-lg text-purple-100">
-            Right now, that's equivalent to{" "}
+            That's equivalent to{" "}
             <NoWrap className="font-bold text-white">
               $ <NumberDisplay val={data.usdFees} />
             </NoWrap>{" "}
@@ -150,23 +148,6 @@ const Result: React.FC<ResultProps> = ({
           </p>
         </div>
       )}
-
-      <div className="flex justify-center space-x-4 mt-8">
-        <Button
-          onClick={addWallet}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center"
-        >
-          <MdPlaylistAdd className="mr-2" size={20} />
-          Add Another Wallet
-        </Button>
-        <Button
-          onClick={reset}
-          className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 flex items-center"
-        >
-          <MdSkipPrevious className="mr-2" size={20} />
-          Start Over
-        </Button>
-      </div>
     </div>
   );
 };
