@@ -12,55 +12,20 @@ type ResultProps = {
   reset: () => void;
   summary: WalletResult;
   wallets: string[];
-  pricesAndFees: PricesAndFees;
+  solanaPrice: number | null;
+  totalFeesUSD: number | null;
+  isEligible: boolean;
 };
 
 const Result: React.FC<ResultProps> = ({
-  pricesAndFees,
   addWallet,
   reset,
   summary,
   wallets,
+  solanaPrice,
+  totalFeesUSD,
+  isEligible,
 }) => {
-  const [solanaData, setSolanaData] = useState<{
-    currentPrice: number | null;
-    canMintNFT: boolean;
-  }>({
-    currentPrice: null,
-    canMintNFT: false,
-  });
-
-  const fetchSolanaPrice = useCallback(async () => {
-    try {
-      const response = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch Solana price");
-      }
-      const priceData = await response.json();
-      return priceData.solana.usd;
-    } catch (error) {
-      console.error("Failed to fetch Solana price:", error);
-      return null;
-    }
-  }, []);
-
-  useEffect(() => {
-    const updateSolanaData = async () => {
-      const price = await fetchSolanaPrice();
-      setSolanaData((prevData) => ({
-        ...prevData,
-        currentPrice: price,
-      }));
-    };
-
-    updateSolanaData();
-    const interval = setInterval(updateSolanaData, 5 * 60 * 1000); // Every 5 minutes
-
-    return () => clearInterval(interval);
-  }, [fetchSolanaPrice]);
-
   const data = useMemo<Partial<WalletsSummary>>(() => {
     if (summary?.aggregation) {
       const { aggregation } = summary;
@@ -82,35 +47,20 @@ const Result: React.FC<ResultProps> = ({
   }, [summary]);
 
   const { currentUsdFees, currentUsdAvgFee } = useMemo(() => {
-    const { currentPrice } = solanaData;
-    if (currentPrice && data.solFees && data.solAvgFee) {
+    if (solanaPrice && data.solFees && data.solAvgFee) {
       return {
         currentUsdFees: new BigNumber(data.solFees)
-          .multipliedBy(currentPrice)
+          .multipliedBy(solanaPrice)
           .decimalPlaces(2)
           .toNumber(),
         currentUsdAvgFee: new BigNumber(data.solAvgFee)
-          .multipliedBy(currentPrice)
+          .multipliedBy(solanaPrice)
           .decimalPlaces(6)
           .toNumber(),
       };
     }
     return { currentUsdFees: null, currentUsdAvgFee: null };
-  }, [solanaData.currentPrice, data.solFees, data.solAvgFee]);
-
-  useEffect(() => {
-    if (currentUsdFees !== null) {
-      setSolanaData((prevData) => ({
-        ...prevData,
-        canMintNFT: currentUsdFees >= 0.001,
-      }));
-    }
-  }, [currentUsdFees]);
-
-  const handleMintNFT = useCallback(() => {
-    // TODO: Implement NFT minting logic
-    console.log("Minting NFT...");
-  }, []);
+  }, [solanaPrice, data.solFees, data.solAvgFee]);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -230,7 +180,7 @@ const Result: React.FC<ResultProps> = ({
 
       <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
         <h3 className="text-2xl font-bold text-purple-200 mb-4">NFT Minting</h3>
-        {solanaData.canMintNFT ? (
+        {isEligible ? (
           <div>
             <p className="text-purple-100 mb-4">
               Congratulations! You've spent at least $0.001 in transaction fees.
@@ -241,7 +191,7 @@ const Result: React.FC<ResultProps> = ({
           <p className="text-purple-100">
             You need to spend at least $0.001 in transaction fees to be eligible
             for minting an NFT. Current spend: $
-            {currentUsdFees !== null ? currentUsdFees.toFixed(3) : "0.000"}
+            {totalFeesUSD !== null ? totalFeesUSD.toFixed(3) : "0.000"}
           </p>
         )}
       </div>

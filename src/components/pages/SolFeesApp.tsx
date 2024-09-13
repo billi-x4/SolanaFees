@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "react-confetti";
 import { useMeasure } from "react-use";
 import Decimal from 'decimal.js';
+import BigNumber from "bignumber.js";
 
 import { FadeInOutTransition, Spotlight } from "@/components/atoms";
 import { ErrorDisplay, Progress } from "@/components/molecules";
@@ -38,6 +39,8 @@ const SolFeesApp = () => {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [solanaPrice, setSolanaPrice] = useState<number | null>(null);
+  const [totalFeesUSD, setTotalFeesUSD] = useState<number | null>(null);
 
   // Refs
   const canvasClientRef = useRef<CanvasClient | null>(null);
@@ -82,24 +85,44 @@ const SolFeesApp = () => {
     };
   }, []);
 
-  // Effect to check eligibility based on transaction fees
+  // New useEffect hook to fetch Solana price and calculate eligibility
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      if (summary?.fees?.total && pricesAndFees?.solanaPrice) {
+    const fetchSolanaPrice = async () => {
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch Solana price");
+        }
+        const priceData = await response.json();
+        return priceData.solana.usd;
+      } catch (error) {
+        console.error("Failed to fetch Solana price:", error);
+        return null;
+      }
+    };
+
+    const calculateEligibility = async () => {
+      const price = await fetchSolanaPrice();
+      setSolanaPrice(price);
+
+      if (price && summary?.fees?.total) {
         const totalFeesInSOL = summary.fees.total;
-        const solPrice = pricesAndFees.solanaPrice;
-        const totalFeesInUSD = new Decimal(totalFeesInSOL).times(solPrice);
-        setIsEligible(totalFeesInUSD.gte(0.001));
+        const totalFeesInUSD = new BigNumber(totalFeesInSOL).times(price).toNumber();
+        setTotalFeesUSD(totalFeesInUSD);
+        setIsEligible(totalFeesInUSD >= 0.001);
       } else {
         setIsEligible(false);
+        setTotalFeesUSD(null);
       }
-    } catch (error) {
-      console.error("Error calculating eligibility:", error);
-      setIsEligible(false);
-    }
-    setIsLoading(false);
-  }, [summary, pricesAndFees]);
+    };
+
+    calculateEligibility();
+    const interval = setInterval(calculateEligibility, 5 * 60 * 1000); // Recalculate every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [summary]);
 
   // Function to handle wallet connection
   const handleConnectWallet = async () => {
@@ -138,12 +161,12 @@ const SolFeesApp = () => {
     }
   };
 
-  // Function to mint NFT
+  // Updated mintNFT function
   const mintNFT = async () => {
-    if (!address) {
-      console.error("No wallet connected. Cannot mint NFT.");
+    if (!address || !isEligible) {
+      console.error("Cannot mint NFT: Wallet not connected or not eligible");
       setErrorMessage(
-        "Wallet is not connected. Please connect your wallet first."
+        "You are not eligible to mint the NFT. Please check your transaction fees."
       );
       return;
     }
@@ -280,11 +303,13 @@ const SolFeesApp = () => {
                 <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
                   <h2 className="text-3xl font-bold mb-6 text-center text-purple-200">Your Solana Fee Summary</h2>
                   <Result
-                    pricesAndFees={pricesAndFees as PricesAndFees}
                     summary={summary as WalletResult}
                     addWallet={() => {}}
                     reset={resetResult}
                     wallets={[]}
+                    solanaPrice={solanaPrice}
+                    totalFeesUSD={totalFeesUSD}
+                    isEligible={isEligible}
                   />
                   
                   {isLoading ? (
