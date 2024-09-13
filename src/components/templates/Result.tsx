@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState, useEffect } from "react";
 import BigNumber from "bignumber.js";
 import { IoInformationCircle } from "react-icons/io5";
@@ -25,6 +27,7 @@ const Result: React.FC<ResultProps> = ({
   wallets,
 }) => {
   const [currentSolPrice, setCurrentSolPrice] = useState<number | null>(null);
+  const [canMintNFT, setCanMintNFT] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchSolanaPrice = async () => {
@@ -75,6 +78,12 @@ const Result: React.FC<ResultProps> = ({
     return null;
   }, [currentSolPrice, data.solFees]);
 
+  useEffect(() => {
+    if (currentUsdFees !== null) {
+      setCanMintNFT(currentUsdFees >= 0.001);
+    }
+  }, [currentUsdFees]);
+
   const currentUsdAvgFee = useMemo(() => {
     if (currentSolPrice && data.solAvgFee) {
       return new BigNumber(data.solAvgFee)
@@ -84,6 +93,11 @@ const Result: React.FC<ResultProps> = ({
     }
     return null;
   }, [currentSolPrice, data.solAvgFee]);
+
+  const handleMintNFT = () => {
+    // Implement your NFT minting logic here
+    console.log("Minting NFT...");
+  };
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -200,6 +214,30 @@ const Result: React.FC<ResultProps> = ({
           </p>
         </div>
       )}
+
+      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+        <h3 className="text-2xl font-bold text-purple-200 mb-4">NFT Minting</h3>
+        {canMintNFT ? (
+          <div>
+            <p className="text-purple-100 mb-4">
+              Congratulations! You've spent at least $0.001 in transaction fees.
+              You can now mint your NFT.
+            </p>
+            <button
+              onClick={handleMintNFT}
+              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded"
+            >
+              Mint NFT
+            </button>
+          </div>
+        ) : (
+          <p className="text-purple-100">
+            You need to spend at least $0.001 in transaction fees to be eligible for minting an NFT.
+            Current spend: ${currentUsdFees !== null ? currentUsdFees.toFixed(3) : "0.000"}
+          </p>
+        )}
+      </div>
+
     </div>
   );
 };
