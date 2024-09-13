@@ -178,7 +178,7 @@ const Result: React.FC<ResultProps> = ({
         </div>
       )}
 
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
+      {/* <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
         <h3 className="text-2xl font-bold text-purple-200 mb-4">NFT Minting</h3>
         {isEligible ? (
           <div>
@@ -194,7 +194,7 @@ const Result: React.FC<ResultProps> = ({
             {totalFeesUSD !== null ? totalFeesUSD.toFixed(3) : "0.000"}
           </p>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

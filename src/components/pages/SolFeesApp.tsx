@@ -5,9 +5,9 @@ import clx from "classnames";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Confetti from "react-confetti";
 import { useMeasure } from "react-use";
-import Decimal from 'decimal.js';
+import Decimal from "decimal.js";
 import BigNumber from "bignumber.js";
-import { clusterApiUrl } from '@solana/web3.js';
+import { clusterApiUrl } from "@solana/web3.js";
 
 import { FadeInOutTransition, Spotlight } from "@/components/atoms";
 import { ErrorDisplay, Progress } from "@/components/molecules";
@@ -112,7 +112,9 @@ const SolFeesApp = () => {
 
       if (price && summary?.fees?.total) {
         const totalFeesInSOL = summary.fees.total;
-        const totalFeesInUSD = new BigNumber(totalFeesInSOL).times(price).toNumber();
+        const totalFeesInUSD = new BigNumber(totalFeesInSOL)
+          .times(price)
+          .toNumber();
         setTotalFeesUSD(totalFeesInUSD);
         setIsEligible(totalFeesInUSD >= 0.001);
       } else {
@@ -178,11 +180,11 @@ const SolFeesApp = () => {
     while (retries < maxRetries) {
       try {
         console.log(`Attempt ${retries + 1} to mint NFT`);
-        
+
         console.log("Generating signer for asset...");
         const assetAddress = generateSigner(umiRef.current);
         console.log("Asset address:", assetAddress);
-        
+
         console.log("Building transaction...");
         let transactionBuilder = await create(umiRef.current, {
           asset: assetAddress,
@@ -232,7 +234,7 @@ const SolFeesApp = () => {
         console.error(`Minting error (Attempt ${retries + 1}):`, error);
         console.log("Detailed error stack trace:", error.stack);
         retries++;
-        
+
         if (retries >= maxRetries) {
           setTransactionStatus("Minting failed.");
           setErrorMessage(
@@ -240,7 +242,7 @@ const SolFeesApp = () => {
           );
         } else {
           console.log(`Retrying in 5 seconds...`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       }
     }
@@ -249,7 +251,7 @@ const SolFeesApp = () => {
   // Updated function to initialize Umi
   const initializeUmi = useCallback(() => {
     console.log("Initializing Umi with NoopSigner...");
-    const connection = clusterApiUrl('mainnet-beta');
+    const connection = clusterApiUrl("mainnet-beta");
     const umi = createUmi(connection)
       .use(mplCore())
       .use(signerIdentity(umiUseNoopSigner(address as string)));
@@ -287,7 +289,8 @@ const SolFeesApp = () => {
                 Solana Fees Checker
               </h1>
               <p className="text-lg mb-8 text-center text-purple-100">
-                Welcome, {username || "User"}! Ready to explore your Solana transaction fees?
+                Welcome, {username || "User"}! Ready to explore your Solana
+                transaction fees?
               </p>
               <Button
                 onClick={handleConnectWallet}
@@ -297,23 +300,30 @@ const SolFeesApp = () => {
               </Button>
               {errorMessage && (
                 <div className="mt-4 p-3 bg-red-500 bg-opacity-25 border border-red-400 rounded-lg">
-                  <p className="text-sm text-center text-red-100">{errorMessage}</p>
+                  <p className="text-sm text-center text-red-100">
+                    {errorMessage}
+                  </p>
                 </div>
               )}
             </div>
           ) : (
             <div className="max-w-4xl mx-auto">
               <FadeInOutTransition
-                show={(state === "loading" || state === "resolving") && !isElementLeaving}
+                show={
+                  (state === "loading" || state === "resolving") &&
+                  !isElementLeaving
+                }
                 beforeLeave={setElementLeaving}
                 afterLeave={setElementNotLeaving}
               >
                 <div className="text-center">
                   <Progress state={state} progress={progress} />
-                  <p className="mt-4 text-lg text-purple-200">Analyzing your transaction fees...</p>
+                  <p className="mt-4 text-lg text-purple-200">
+                    Analyzing your transaction fees...
+                  </p>
                 </div>
               </FadeInOutTransition>
-              
+
               <Transition
                 show={state === "done" && !isElementLeaving}
                 enter="transition-opacity duration-300"
@@ -323,7 +333,7 @@ const SolFeesApp = () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
+                {/* <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
                   <h2 className="text-3xl font-bold mb-6 text-center text-purple-200">Your Solana Fee Summary</h2>
                   <Result
                     summary={summary as WalletResult}
@@ -378,9 +388,9 @@ const SolFeesApp = () => {
                       <p className="text-sm text-center text-red-100">{errorMessage}</p>
                     </div>
                   )}
-                </div>
+                </div> */}
               </Transition>
-              
+
               {state === "done" && (
                 <Confetti
                   gravity={0.1}
@@ -389,7 +399,7 @@ const SolFeesApp = () => {
                   run={true}
                   width={screenWidth}
                   height={screenHeight}
-                  colors={['#8B5CF6', '#6366F1', '#EC4899', '#10B981']}
+                  colors={["#8B5CF6", "#6366F1", "#EC4899", "#10B981"]}
                 />
               )}
             </div>
