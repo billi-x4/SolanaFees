@@ -333,7 +333,7 @@ const SolFeesApp = () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                {/* <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
+                <div className="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-xl p-8 shadow-2xl">
                   <h2 className="text-3xl font-bold mb-6 text-center text-purple-200">Your Solana Fee Summary</h2>
                   <Result
                     summary={summary as WalletResult}
@@ -345,7 +345,7 @@ const SolFeesApp = () => {
                     isEligible={isEligible}
                   />
                   
-                  {!isEligibilityChecked ? (
+                  {/* {!isEligibilityChecked ? (
                     <div className="flex justify-center mt-6">
                       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-300"></div>
                     </div>
@@ -387,8 +387,8 @@ const SolFeesApp = () => {
                     <div className="mt-4 p-3 bg-red-500 bg-opacity-25 border border-red-400 rounded-lg">
                       <p className="text-sm text-center text-red-100">{errorMessage}</p>
                     </div>
-                  )}
-                </div> */}
+                  )} */}
+                </div>
               </Transition>
 
               {state === "done" && (
