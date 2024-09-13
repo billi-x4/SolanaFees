@@ -28,6 +28,8 @@ const Result: React.FC<ResultProps> = ({
 }) => {
   const [currentSolPrice, setCurrentSolPrice] = useState<number | null>(null);
   const [canMintNFT, setCanMintNFT] = useState<boolean>(false);
+  const [isMinting, setIsMinting] = useState<boolean>(false);
+  const [mintingError, setMintingError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSolanaPrice = async () => {
@@ -94,9 +96,24 @@ const Result: React.FC<ResultProps> = ({
     return null;
   }, [currentSolPrice, data.solAvgFee]);
 
-  const handleMintNFT = () => {
-    // Implement your NFT minting logic here
-    console.log("Minting NFT...");
+  const handleMintNFT = async () => {
+    if (!canMintNFT) return;
+
+    setIsMinting(true);
+    setMintingError(null);
+
+    try {
+      // Implement your NFT minting logic here
+      // This is a placeholder - replace with actual minting code
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulating minting process
+      console.log("NFT minted successfully!");
+      // You might want to update some state or trigger a refresh here
+    } catch (error) {
+      console.error("Failed to mint NFT:", error);
+      setMintingError("Failed to mint NFT. Please try again.");
+    } finally {
+      setIsMinting(false);
+    }
   };
 
   return (
@@ -225,15 +242,24 @@ const Result: React.FC<ResultProps> = ({
             </p>
             <button
               onClick={handleMintNFT}
-              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded"
+              disabled={isMinting}
+              className={`bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded ${
+                isMinting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              Mint NFT
+              {isMinting ? 'Minting...' : 'Mint NFT'}
             </button>
+            {mintingError && (
+              <p className="text-red-500 mt-2">{mintingError}</p>
+            )}
           </div>
         ) : (
           <p className="text-purple-100">
-            You need to spend at least $0.001 in transaction fees to be eligible for minting an NFT.
+            Almost there! You need to spend at least $0.001 in transaction fees to be eligible.
+            <br />
             Current spend: ${currentUsdFees !== null ? currentUsdFees.toFixed(3) : "0.000"}
+            <br />
+            Keep using your Solana wallet and check back soon!
           </p>
         )}
       </div>
