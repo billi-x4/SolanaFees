@@ -236,12 +236,6 @@ const Result: React.FC<ResultProps> = ({
               Congratulations! You've spent at least $0.001 in transaction fees.
               You can now mint your NFT.
             </p>
-            <button
-              onClick={handleMintNFT}
-              className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded"
-            >
-              Mint NFT
-            </button>
           </div>
         ) : (
           <p className="text-purple-100">
